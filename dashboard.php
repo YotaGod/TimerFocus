@@ -43,15 +43,15 @@ include 'includes/header.php';
     <div class="card" id="chartsContainer" style="display: none;">
         <h2>📈 Grafik Aktivitas</h2>
 
-        <div class="chart-container">
+        <div class="chart-container" style="height: 400px; margin: 20px 0;">
             <canvas id="dailyChart"></canvas>
         </div>
 
-        <div class="chart-container">
+        <div class="chart-container" style="height: 400px; margin: 20px 0;">
             <canvas id="activityChart"></canvas>
         </div>
 
-        <div class="chart-container">
+        <div class="chart-container" style="height: 400px; margin: 20px 0;">
             <canvas id="hourlyChart"></canvas>
         </div>
     </div>
@@ -86,6 +86,12 @@ include 'includes/header.php';
 
     // Load dashboard saat halaman dimuat
     document.addEventListener('DOMContentLoaded', function() {
+        // Check if Chart.js is loaded
+        if (typeof Chart === 'undefined') {
+            showError('Chart.js tidak berhasil dimuat. Silakan refresh halaman.');
+            return;
+        }
+        
         loadDashboard();
         setDefaultDates();
     });
@@ -159,7 +165,11 @@ include 'includes/header.php';
                 console.log('Dashboard data:', data);
 
                 if (data.success) {
-                    displayDashboard(data);
+                    if (data.overall_stats && data.overall_stats.total_sessions > 0) {
+                        displayDashboard(data);
+                    } else {
+                        showNoData();
+                    }
                 } else {
                     showError(data.message || 'Terjadi kesalahan saat memuat data');
                 }
@@ -172,6 +182,8 @@ include 'includes/header.php';
     }
 
     function displayDashboard(data) {
+        console.log('Displaying dashboard with data:', data);
+        
         if (data.overall_stats.total_sessions === 0) {
             showNoData();
             return;
@@ -189,10 +201,12 @@ include 'includes/header.php';
         document.getElementById('chartsContainer').style.display = 'block';
         document.getElementById('topActivitiesContainer').style.display = 'block';
 
-        // Buat grafik
-        createDailyChart(data.daily_stats);
-        createActivityChart(data.activity_stats);
-        createHourlyChart(data.hourly_stats);
+        // Buat grafik dengan delay untuk memastikan elemen sudah visible
+        setTimeout(() => {
+            createDailyChart(data.daily_stats);
+            createActivityChart(data.activity_stats);
+            createHourlyChart(data.hourly_stats);
+        }, 100);
 
         // Update tabel aktivitas teratas
         updateTopActivitiesTable(data.activity_stats);
@@ -205,8 +219,15 @@ include 'includes/header.php';
             charts.daily.destroy();
         }
 
-        const labels = dailyStats.map(day => formatDate(day.date));
-        const data = dailyStats.map(day => day.total_hours);
+        // Handle empty data
+        let labels, data;
+        if (dailyStats.length === 0) {
+            labels = ['No Data'];
+            data = [0];
+        } else {
+            labels = dailyStats.map(day => formatDate(day.date));
+            data = dailyStats.map(day => day.total_hours);
+        }
 
         charts.daily = new Chart(ctx, {
             type: 'line',
@@ -250,9 +271,17 @@ include 'includes/header.php';
             charts.activity.destroy();
         }
 
-        const labels = activityStats.map(activity => activity.activity_name);
-        const data = activityStats.map(activity => activity.total_hours);
-        const colors = generateColors(labels.length);
+        // Handle empty data
+        let labels, data, colors;
+        if (activityStats.length === 0) {
+            labels = ['No Data'];
+            data = [1];
+            colors = ['#e0e0e0'];
+        } else {
+            labels = activityStats.map(activity => activity.activity_name);
+            data = activityStats.map(activity => activity.total_hours);
+            colors = generateColors(labels.length);
+        }
 
         charts.activity = new Chart(ctx, {
             type: 'doughnut',
@@ -288,8 +317,15 @@ include 'includes/header.php';
             charts.hourly.destroy();
         }
 
-        const labels = hourlyStats.map(hour => hour.hour_label);
-        const data = hourlyStats.map(hour => hour.total_hours);
+        // Handle empty data
+        let labels, data;
+        if (hourlyStats.length === 0) {
+            labels = ['No Data'];
+            data = [0];
+        } else {
+            labels = hourlyStats.map(hour => hour.hour_label);
+            data = hourlyStats.map(hour => hour.total_hours);
+        }
 
         charts.hourly = new Chart(ctx, {
             type: 'bar',
@@ -328,6 +364,17 @@ include 'includes/header.php';
     function updateTopActivitiesTable(activityStats) {
         const tableBody = document.getElementById('topActivitiesTable');
         tableBody.innerHTML = '';
+
+        if (activityStats.length === 0) {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td colspan="5" style="text-align: center; color: #666; padding: 20px;">
+                    Belum ada data aktivitas
+                </td>
+            `;
+            tableBody.appendChild(row);
+            return;
+        }
 
         activityStats.forEach((activity, index) => {
             const row = document.createElement('tr');

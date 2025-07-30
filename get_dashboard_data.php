@@ -83,8 +83,7 @@ try {
         FROM focus_history 
         WHERE DATE(created_at) BETWEEN ? AND ?
         GROUP BY HOUR(created_at)
-        ORDER BY total_seconds DESC
-        LIMIT 5
+        ORDER BY hour ASC
     ");
     $stmt->execute([$startDate, $endDate]);
     $hourlyStats = $stmt->fetchAll();
