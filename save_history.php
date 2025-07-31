@@ -22,13 +22,17 @@ try {
         throw new Exception('Durasi harus lebih dari 0 detik');
     }
 
-    // ✅ Simplified insert without start/end times
+    // Ambil id berikutnya
+    $nextId = getNextId($pdo, 'focus_history', 'id');
+
+    // Insert dengan id manual
     $stmt = $pdo->prepare("
-        INSERT INTO focus_history (activity_name, duration_seconds) 
-        VALUES (?, ?)
+        INSERT INTO focus_history (id, activity_name, duration_seconds) 
+        VALUES (?, ?, ?)
     ");
 
     $stmt->execute([
+        $nextId,
         $activityName,
         $durationSeconds
     ]);
@@ -37,7 +41,7 @@ try {
         'success' => true,
         'message' => 'Sesi fokus berhasil disimpan',
         'data' => [
-            'id' => $pdo->lastInsertId(),
+            'id' => $nextId,
             'activity_name' => $activityName,
             'duration_seconds' => $durationSeconds,
             'duration_formatted' => formatDuration($durationSeconds)
@@ -58,4 +62,11 @@ function formatDuration($seconds)
     $secs = $seconds % 60;
 
     return sprintf('%02d:%02d:%02d', $hours, $minutes, $secs);
+}
+
+function getNextId($pdo, $table, $idColumn = 'id') {
+    $stmt = $pdo->prepare("SELECT MAX($idColumn) AS max_id FROM $table");
+    $stmt->execute();
+    $row = $stmt->fetch();
+    return isset($row['max_id']) ? intval($row['max_id']) + 1 : 1;
 }

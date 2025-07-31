@@ -9,6 +9,18 @@ include 'includes/header.php';
         <p>Kelola waktu fokus Anda untuk produktivitas maksimal</p>
 
         <div class="timer-display" id="timer">00:00:00</div>
+        <div id="tree-3d" style="width:220px;height:5px;margin:20px auto;border-radius:16px;overflow:hidden;background:transparent"></div>
+
+        <model-viewer 
+            src="assets/tree.glb" 
+            alt="Tree 3D" 
+            style="width:220px;height:180px;margin:20px auto;border-radius:16px;overflow:hidden;background:transparent;display:block"
+            camera-controls 
+            auto-rotate 
+            background-color="transparent"
+            shadow-intensity="1"
+            ar
+        ></model-viewer>
 
         <input type="text"
             class="activity-input"
@@ -27,11 +39,12 @@ include 'includes/header.php';
     </div>
 </div>
 
+<script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
 <script>
     let timer;
-    let seconds = 0;
     let isRunning = false;
-    let startTime = null;
+    let startTime = localStorage.getItem('startTime') ? parseInt(localStorage.getItem('startTime')) : null;
+    let pausedTime = localStorage.getItem('pausedTime') ? parseInt(localStorage.getItem('pausedTime')) : null;
 
     const timerDisplay = document.getElementById('timer');
     const startBtn = document.getElementById('startBtn');
@@ -45,72 +58,88 @@ include 'includes/header.php';
         const hours = Math.floor(totalSeconds / 3600);
         const minutes = Math.floor((totalSeconds % 3600) / 60);
         const seconds = totalSeconds % 60;
-
         return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     }
 
+    function getElapsedSeconds() {
+        if (!startTime) return 0;
+        if (pausedTime) {
+            return Math.floor((pausedTime - startTime) / 1000);
+        }
+        return Math.floor((Date.now() - startTime) / 1000);
+    }
+
     function updateTimer() {
-        seconds++;
-        timerDisplay.textContent = formatTime(seconds);
+        const elapsed = getElapsedSeconds();
+        timerDisplay.textContent = formatTime(elapsed);
     }
 
     function startTimer() {
-        if (!isRunning) {
-            if (!activityInput.value.trim()) {
-                showMessage('Silakan masukkan jenis aktivitas terlebih dahulu!', 'error');
-                return;
-            }
-
-            isRunning = true;
-            startTime = new Date();
-            timer = setInterval(updateTimer, 1000);
-
-            startBtn.disabled = true;
-            pauseBtn.disabled = false;
-            stopBtn.disabled = false;
-            resetBtn.disabled = true;
-            activityInput.disabled = true;
-
-            showMessage('Timer dimulai! Fokus pada aktivitas Anda.', 'success');
+        if (!activityInput.value.trim()) {
+            showMessage('Silakan masukkan jenis aktivitas terlebih dahulu!', 'error');
+            return;
         }
+        if (!startTime) {
+            startTime = Date.now();
+            localStorage.setItem('startTime', startTime);
+        }
+        pausedTime = null;
+        localStorage.removeItem('pausedTime');
+        isRunning = true;
+        timer = setInterval(updateTimer, 1000);
+
+        startBtn.disabled = true;
+        pauseBtn.disabled = false;
+        stopBtn.disabled = false;
+        resetBtn.disabled = true;
+        activityInput.disabled = true;
+
+        showMessage('Timer dimulai! Fokus pada aktivitas Anda.', 'success');
+        updateTimer();
     }
 
     function pauseTimer() {
         if (isRunning) {
             clearInterval(timer);
             isRunning = false;
+            pausedTime = Date.now();
+            localStorage.setItem('pausedTime', pausedTime);
 
             startBtn.disabled = false;
             pauseBtn.disabled = true;
             resetBtn.disabled = false;
 
             showMessage('Timer dijeda. Klik "Mulai" untuk melanjutkan.', 'success');
+            updateTimer();
         }
     }
 
     function stopTimer() {
-        if (isRunning || seconds > 0) {
+        if (startTime) {
             clearInterval(timer);
             isRunning = false;
 
-            const endTime = new Date();
+            const endTime = pausedTime ? new Date(pausedTime) : new Date();
             const activityName = activityInput.value.trim();
+            const durationSeconds = getElapsedSeconds();
 
             // Simpan ke database
-            saveFocusSession(activityName, seconds, startTime, endTime);
+            saveFocusSession(activityName, durationSeconds, new Date(startTime), endTime);
 
-            // Reset UI
+            // Reset UI dan localStorage
             resetTimer();
         }
     }
 
     function resetTimer() {
         clearInterval(timer);
-        seconds = 0;
         isRunning = false;
         startTime = null;
+        pausedTime = null;
+        localStorage.removeItem('startTime');
+        localStorage.removeItem('pausedTime');
 
-        timerDisplay.textContent = formatTime(seconds);
+        timerDisplay.textContent = formatTime(0);
 
         startBtn.disabled = false;
         pauseBtn.disabled = true;
@@ -129,10 +158,12 @@ include 'includes/header.php';
         }, 3000);
     }
 
-    function saveFocusSession(activityName, durationSeconds) {
+    function saveFocusSession(activityName, durationSeconds, startTimeObj, endTimeObj) {
         const formData = new FormData();
         formData.append('activity_name', activityName);
         formData.append('duration_seconds', durationSeconds);
+        formData.append('start_time', startTimeObj.toISOString());
+        formData.append('end_time', endTimeObj.toISOString());
 
         fetch('save_history.php', {
                 method: 'POST',
@@ -163,11 +194,45 @@ include 'includes/header.php';
             e.preventDefault();
             if (isRunning) {
                 pauseTimer();
-            } else if (seconds === 0) {
+            } else if (!startTime) {
                 startTimer();
             } else {
                 startTimer();
             }
+        }
+    });
+
+    // Saat halaman dimuat, lanjutkan timer jika masih ada startTime di localStorage
+    window.addEventListener('DOMContentLoaded', () => {
+        if (startTime) {
+            if (!pausedTime) {
+                isRunning = true;
+                timer = setInterval(updateTimer, 1000);
+                startBtn.disabled = true;
+                pauseBtn.disabled = false;
+                stopBtn.disabled = false;
+                resetBtn.disabled = true;
+                activityInput.disabled = true;
+            } else {
+                updateTimer();
+                startBtn.disabled = false;
+                pauseBtn.disabled = true;
+                stopBtn.disabled = false;
+                resetBtn.disabled = false;
+                activityInput.disabled = true;
+            }
+            updateTimer();
+        }
+    });
+</script>
+
+<script>
+    // Pastikan fungsi renderTree3D ada di tree.js
+    window.addEventListener('DOMContentLoaded', function() {
+        if (typeof renderTree3D === 'function') {
+            renderTree3D('tree-3d');
+        } else {
+            console.error('Fungsi renderTree3D tidak ditemukan di assets/tree.js');
         }
     });
 </script>

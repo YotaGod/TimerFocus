@@ -44,8 +44,8 @@ include 'includes/header.php';
     <!-- Statistik Umum -->
     <div class="stats-grid" id="overallStats" style="display: none;">
         <div class="stat-card">
-            <div class="stat-number" id="totalHours">0</div>
-            <div class="stat-label">Total Jam Fokus</div>
+            <div class="stat-number" id="totalMinutes">0</div>
+            <div class="stat-label">Total Fokus (menit)</div>
         </div>
         <div class="stat-card">
             <div class="stat-number" id="totalSessions">0</div>
@@ -53,7 +53,7 @@ include 'includes/header.php';
         </div>
         <div class="stat-card">
             <div class="stat-number" id="avgDuration">0</div>
-            <div class="stat-label">Rata-rata Durasi (jam)</div>
+            <div class="stat-label">Rata-rata Durasi (menit)</div>
         </div>
         <div class="stat-card">
             <div class="stat-number" id="periodLabel">Minggu Ini</div>
@@ -86,9 +86,10 @@ include 'includes/header.php';
                 <tr>
                     <th>Peringkat</th>
                     <th>Aktivitas</th>
-                    <th>Total Jam</th>
+                    <th>Total Fokus (menit)</th>
                     <th>Jumlah Sesi</th>
-                    <th>Rata-rata Durasi</th>
+                    <th>Rata-rata Durasi (menit)</th>
+                    <th>Jam</th> <!-- Kolom Jam baru -->
                 </tr>
             </thead>
             <tbody id="topActivitiesTable">
@@ -247,9 +248,9 @@ include 'includes/header.php';
         hideNoData();
 
         // Update statistik umum
-        document.getElementById('totalHours').textContent = data.overall_stats.total_hours;
+        document.getElementById('totalMinutes').textContent = data.overall_stats.total_minutes;
         document.getElementById('totalSessions').textContent = data.overall_stats.total_sessions;
-        document.getElementById('avgDuration').textContent = data.overall_stats.avg_hours;
+        document.getElementById('avgDuration').textContent = data.overall_stats.avg_minutes;
         document.getElementById('periodLabel').textContent = getPeriodLabel(data.period);
 
         document.getElementById('overallStats').style.display = 'grid';
@@ -271,14 +272,14 @@ include 'includes/header.php';
         if (charts.daily) charts.daily.destroy();
 
         const labels = dailyStats.map(day => formatDate(day.date));
-        const data = dailyStats.map(day => day.total_hours);
+        const data = dailyStats.map(day => day.total_minutes);
 
         charts.daily = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: labels,
                 datasets: [{
-                    label: 'Jam Fokus per Hari',
+                    label: 'Fokus (menit) per Hari',
                     data: data,
                     borderColor: '#667eea',
                     backgroundColor: 'rgba(102, 126, 234, 0.1)',
@@ -300,7 +301,7 @@ include 'includes/header.php';
                         beginAtZero: true,
                         title: {
                             display: true,
-                            text: 'Jam'
+                            text: 'Menit'
                         }
                     }
                 }
@@ -314,7 +315,7 @@ include 'includes/header.php';
         if (charts.activity) charts.activity.destroy();
 
         const labels = activityStats.map(a => a.activity_name);
-        const data = activityStats.map(a => a.total_hours);
+        const data = activityStats.map(a => a.total_minutes);
         const colors = generateColors(labels.length);
 
         charts.activity = new Chart(ctx, {
@@ -350,14 +351,14 @@ include 'includes/header.php';
         if (charts.hourly) charts.hourly.destroy();
 
         const labels = hourlyStats.map(h => h.hour_label);
-        const data = hourlyStats.map(h => h.total_hours);
+        const data = hourlyStats.map(h => h.total_minutes);
 
         charts.hourly = new Chart(ctx, {
             type: 'bar',
             data: {
                 labels: labels,
                 datasets: [{
-                    label: 'Jam Fokus per Jam',
+                    label: 'Fokus (menit) per Jam',
                     data: data,
                     backgroundColor: '#764ba2',
                     borderColor: '#667eea',
@@ -378,7 +379,7 @@ include 'includes/header.php';
                         beginAtZero: true,
                         title: {
                             display: true,
-                            text: 'Jam'
+                            text: 'Menit'
                         }
                     }
                 }
@@ -392,13 +393,17 @@ include 'includes/header.php';
         tableBody.innerHTML = '';
 
         activityStats.forEach((activity, index) => {
+            const jam = activity.total_hours !== undefined
+                ? `${activity.total_hours} jam`
+                : '-';
             const row = document.createElement('tr');
             row.innerHTML = `
             <td><strong>#${index + 1}</strong></td>
             <td><strong>${escapeHtml(activity.activity_name)}</strong></td>
-            <td><span style="font-family: monospace;">${activity.total_hours} jam</span></td>
+            <td><span style="font-family: monospace;">${activity.total_minutes} menit</span></td>
             <td>${activity.sessions} sesi</td>
-            <td>${activity.avg_hours} jam</td>
+            <td>${activity.avg_minutes} menit</td>
+            <td>${jam}</td> <!-- Data jam total fokus -->
         `;
             tableBody.appendChild(row);
         });

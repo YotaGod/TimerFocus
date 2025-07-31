@@ -58,20 +58,29 @@ try {
     $stmt->execute([$startDate, $endDate]);
     $dailyStats = $stmt->fetchAll();
 
-    // 3. Durasi per aktivitas
+    // 3. Durasi per aktivitas + jam produktif utama per aktivitas
     $stmt = $pdo->prepare("
         SELECT 
-            activity_name,
-            SUM(duration_seconds) as total_seconds,
+            fh.activity_name,
+            SUM(fh.duration_seconds) as total_seconds,
             COUNT(*) as sessions,
-            AVG(duration_seconds) as avg_duration
-        FROM focus_history 
-        WHERE DATE(created_at) BETWEEN ? AND ?
-        GROUP BY activity_name
+            AVG(fh.duration_seconds) as avg_duration,
+            (
+                SELECT HOUR(created_at)
+                FROM focus_history
+                WHERE activity_name = fh.activity_name
+                  AND DATE(created_at) BETWEEN ? AND ?
+                GROUP BY HOUR(created_at)
+                ORDER BY SUM(duration_seconds) DESC
+                LIMIT 1
+            ) as top_hour
+        FROM focus_history fh
+        WHERE DATE(fh.created_at) BETWEEN ? AND ?
+        GROUP BY fh.activity_name
         ORDER BY total_seconds DESC
         LIMIT 10
     ");
-    $stmt->execute([$startDate, $endDate]);
+    $stmt->execute([$startDate, $endDate, $startDate, $endDate]);
     $activityStats = $stmt->fetchAll();
 
     // 4. Jam produktif (jam dengan fokus terbanyak)
@@ -107,15 +116,15 @@ try {
             'total_seconds' => intval($overallStats['total_seconds'] ?? 0),
             'total_sessions' => intval($overallStats['total_sessions'] ?? 0),
             'avg_duration' => round($overallStats['avg_duration'] ?? 0),
-            'total_hours' => round(($overallStats['total_seconds'] ?? 0) / 3600, 1),
-            'avg_hours' => round(($overallStats['avg_duration'] ?? 0) / 3600, 2)
+            'total_minutes' => round(($overallStats['total_seconds'] ?? 0) / 60, 1),
+            'avg_minutes' => round(($overallStats['avg_duration'] ?? 0) / 60, 2)
         ],
         'daily_stats' => array_map(function ($day) {
             return [
                 'date' => $day['date'],
                 'total_seconds' => intval($day['total_seconds']),
                 'sessions' => intval($day['sessions']),
-                'total_hours' => round($day['total_seconds'] / 3600, 2)
+                'total_minutes' => round($day['total_seconds'] / 60, 2)
             ];
         }, $dailyStats),
         'activity_stats' => array_map(function ($activity) {
@@ -124,8 +133,12 @@ try {
                 'total_seconds' => intval($activity['total_seconds']),
                 'sessions' => intval($activity['sessions']),
                 'avg_duration' => round($activity['avg_duration']),
-                'total_hours' => round($activity['total_seconds'] / 3600, 2),
-                'avg_hours' => round($activity['avg_duration'] / 3600, 2)
+                'total_minutes' => round($activity['total_seconds'] / 60, 2),
+                'avg_minutes' => round($activity['avg_duration'] / 60, 2),
+                'total_hours' => round($activity['total_seconds'] / 3600, 2), // Tambahkan ini
+                'hour_label' => isset($activity['top_hour']) && $activity['top_hour'] !== null
+                    ? sprintf('%02d:00', $activity['top_hour'])
+                    : '-'
             ];
         }, $activityStats),
         'hourly_stats' => array_map(function ($hour) {
@@ -133,7 +146,7 @@ try {
                 'hour' => intval($hour['hour']),
                 'total_seconds' => intval($hour['total_seconds']),
                 'sessions' => intval($hour['sessions']),
-                'total_hours' => round($hour['total_seconds'] / 3600, 2),
+                'total_minutes' => round($hour['total_seconds'] / 60, 2),
                 'hour_label' => sprintf('%02d:00', $hour['hour'])
             ];
         }, $hourlyStats)
