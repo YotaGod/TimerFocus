@@ -26,7 +26,7 @@ include 'includes/header.php';
 
         <model-viewer 
             id="roverViewer"
-            src="assets/Palta.glb"
+            src="assets/img/Palta.glb"
             alt="Rover 3D"
             camera-controls
             auto-rotate
@@ -35,6 +35,10 @@ include 'includes/header.php';
             shadow-intensity="1"
             ar
         ></model-viewer>
+        <audio id="bgMusic" loop preload="metadata">
+            <source src="assets/audio/focus-lofi.mp3" type="audio/mpeg">
+            Your browser does not support the audio element.
+        </audio>
 
         <input type="text"
             class="activity-input"
@@ -47,6 +51,11 @@ include 'includes/header.php';
             <button class="btn btn-secondary" id="pauseBtn" disabled>⏸️ Jeda</button>
             <button class="btn btn-success" id="stopBtn" disabled>⏹️ Selesai</button>
             <button class="btn btn-secondary" id="resetBtn">🔄 Reset</button>
+            
+            <button id="musicToggle"
+                class="music-btn"
+                title="Latar belakang musik ♪"
+                aria-pressed="false">♪</button>
         </div>
 
         <div id="message"></div>
@@ -146,6 +155,39 @@ include 'includes/header.php';
         }
     }
 
+    // Simpan input ke localStorage setiap kali berubah
+activityInput.addEventListener('input', function() {
+    localStorage.setItem('activityInputValue', activityInput.value);
+});
+
+// Saat halaman dimuat, isi input dari localStorage jika ada
+window.addEventListener('DOMContentLoaded', () => {
+    const savedValue = localStorage.getItem('activityInputValue');
+    if (savedValue) {
+        activityInput.value = savedValue;
+    }
+    // Saat halaman dimuat, lanjutkan timer jika masih ada startTime di localStorage
+    if (startTime) {
+        if (!pausedTime) {
+            isRunning = true;
+            timer = setInterval(updateTimer, 1000);
+            startBtn.disabled = true;
+            pauseBtn.disabled = false;
+            stopBtn.disabled = false;
+            resetBtn.disabled = true;
+            activityInput.disabled = true;
+        } else {
+            updateTimer();
+            startBtn.disabled = false;
+            pauseBtn.disabled = true;
+            stopBtn.disabled = false;
+            resetBtn.disabled = false;
+            activityInput.disabled = true;
+        }
+        updateTimer();
+    }
+});
+
     function resetTimer() {
         clearInterval(timer);
         isRunning = false;
@@ -153,6 +195,7 @@ include 'includes/header.php';
         pausedTime = null;
         localStorage.removeItem('startTime');
         localStorage.removeItem('pausedTime');
+        localStorage.removeItem('activityInputValue'); // Tambahkan baris ini
 
         timerDisplay.textContent = formatTime(0);
 
@@ -216,29 +259,36 @@ include 'includes/header.php';
             }
         }
     });
+</script>
 
-    // Saat halaman dimuat, lanjutkan timer jika masih ada startTime di localStorage
-    window.addEventListener('DOMContentLoaded', () => {
-        if (startTime) {
-            if (!pausedTime) {
-                isRunning = true;
-                timer = setInterval(updateTimer, 1000);
-                startBtn.disabled = true;
-                pauseBtn.disabled = false;
-                stopBtn.disabled = false;
-                resetBtn.disabled = true;
-                activityInput.disabled = true;
-            } else {
-                updateTimer();
-                startBtn.disabled = false;
-                pauseBtn.disabled = true;
-                stopBtn.disabled = false;
-                resetBtn.disabled = false;
-                activityInput.disabled = true;
-            }
-            updateTimer();
-        }
-    });
+<script>
+(function () {
+  const music   = document.getElementById('bgMusic');
+  const toggle  = document.getElementById('musicToggle');
+  const key     = 'musicEnabled';
+
+  // Restore previous state
+  if (localStorage.getItem(key) === 'true') {
+    music.volume = 0.25;            // gentle level
+    music.play().catch(() => {});   // autoplay might be blocked
+    toggle.classList.add('playing');
+    toggle.setAttribute('aria-pressed', 'true');
+  }
+
+  toggle.addEventListener('click', () => {
+    if (music.paused) {
+      music.play();
+      toggle.classList.add('playing');
+      toggle.setAttribute('aria-pressed', 'true');
+      localStorage.setItem(key, 'true');
+    } else {
+      music.pause();
+      toggle.classList.remove('playing');
+      toggle.setAttribute('aria-pressed', 'false');
+      localStorage.setItem(key, 'false');
+    }
+  });
+})();
 </script>
 
 <?php include 'includes/footer.php'; ?>

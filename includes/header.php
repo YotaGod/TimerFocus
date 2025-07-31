@@ -10,6 +10,7 @@
     <title>Focus Timer - Kelola Waktu Fokus Anda</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="stylesheet" href="assets/css/mobile.css">
+    <link rel="icon" href="assets/img/logo.png" type="image/x-icon">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="assets/js/mobile.js"></script>
 </head>

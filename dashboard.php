@@ -326,7 +326,17 @@ include 'includes/header.php';
                     title: {
                         display: true,
                         text: 'Tren Fokus Harian'
+                    },
+                    legend: {
+                    display: false, // Tampilkan legend
+                    labels: {
+                        font: {
+                            size: 1600, // Perbesar ukuran font legend
+                            weight: 'bold'
+                        },
+                        color: '#333' // Warna font legend
                     }
+                }
                 },
                 scales: {
                     y: {
@@ -370,6 +380,7 @@ include 'includes/header.php';
                         text: 'Distribusi Fokus per Aktivitas'
                     },
                     legend: {
+                        margin: 20,
                         position: 'bottom'
                     }
                 }
@@ -404,6 +415,9 @@ include 'includes/header.php';
                     title: {
                         display: true,
                         text: 'Jam Produktif'
+                    },
+                    legend: {
+                        display: false // Nonaktifkan legend di sini
                     }
                 },
                 scales: {
