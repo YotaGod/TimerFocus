@@ -166,3 +166,56 @@
     overflow-x: hidden;
   }
 }
+
+@media (max-width: 768px) {
+    #periodSelect {
+        width: 100%;
+        max-width: 300px;
+    }
+    
+    .custom-date-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .custom-date-row input {
+        width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .period-card {
+    padding: 20px;
+  }
+
+  .date-range {
+    flex-direction: column;
+    gap: 15px;
+    align-items: stretch;
+  }
+
+  .date-group,
+  #periodSelect {
+    max-width: none;
+    width: 100%;
+  }
+    
+    .date-input-group {
+        width: 100%;
+    }
+    
+    .period-dropdown {
+        width: 100%;
+        max-width: 300px;
+    }
+}
+
+@media (max-width: 480px) {
+    .period-selector {
+        padding: 15px;
+    }
+    
+    .date-input {
+        font-size: 14px;
+    }
+}

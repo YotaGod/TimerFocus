@@ -8,12 +8,34 @@ include 'includes/header.php';
     <p>Analisis produktivitas dan pola fokus Anda</p>
 
     <div class="period-selector">
-        <button class="btn btn-primary" onclick="changePeriod('week')" id="weekBtn">Minggu Ini</button>
-        <button class="btn btn-secondary" onclick="changePeriod('month')" id="monthBtn">Bulan Ini</button>
-        <button class="btn btn-secondary" onclick="changePeriod('year')" id="yearBtn">Tahun Ini</button>
-        <input type="date" id="startDate" class="activity-input">
-        <input type="date" id="endDate" class="activity-input">
-        <button class="btn btn-primary" onclick="loadCustomPeriod()">Terapkan</button>
+        <div class="period-card">
+            <!-- 📅 Period Dropdown -->
+            <div class="input-group">
+                <label for="periodSelect">Periode</label>
+                <select id="periodSelect" class="select-input" onchange="changePeriod(this.value)">
+                    <option value="week" selected>Minggu Ini</option>
+                    <option value="month">Bulan Ini</option>
+                    <option value="year">Tahun Ini</option>
+                </select>
+            </div>
+
+            <!-- 🗓️ Date Range Picker -->
+            <div class="date-range">
+                <div class="date-group">
+                    <label for="startDate">Dari</label>
+                    <input type="date" id="startDate" class="date-input">
+                </div>
+
+                <div class="date-group">
+                    <label for="endDate">Sampai</label>
+                    <input type="date" id="endDate" class="date-input">
+                </div>
+
+                <button class="btn apply-btn" onclick="loadCustomPeriod()">
+                    Terapkan
+                </button>
+            </div>
+        </div>
     </div>
 
     <div id="loading" class="loading">Memuat statistik...</div>
@@ -84,12 +106,60 @@ include 'includes/header.php';
     let currentPeriod = 'week';
     let charts = {};
 
+    // -------------------------------------------------
+    // 🔁 Auto full-year range when "year" is selected
+    // -------------------------------------------------
+    const periodSelect = document.getElementById('periodSelect');
+    const startDateEl = document.getElementById('startDate');
+    const endDateEl = document.getElementById('endDate');
+
+    periodSelect.addEventListener('change', () => {
+        const now = new Date();
+        const year = now.getFullYear();
+
+        if (periodSelect.value === 'year') {
+            startDateEl.value = `${year}-01-01`; // 1 Januari
+            endDateEl.value = `${year}-12-31`; // 31 Desember
+            loadDashboard('year'); // refresh dashboard
+        }
+    });
+
+    /* opsional: panggil sekali saat halaman dimuat jika default = year */
+    if (periodSelect.value === 'year') {
+        const y = new Date().getFullYear();
+        startDateEl.value = `${y}-01-01`;
+        endDateEl.value = `${y}-12-31`;
+    }
+
+    let startTime = localStorage.getItem('startTime') ? parseInt(localStorage.getItem('startTime')) : null;
+
+    function startTimer() {
+        if (!startTime) {
+            startTime = Date.now();
+            localStorage.setItem('startTime', startTime);
+        }
+        timer = setInterval(updateTimer, 1000);
+    }
+
+    function updateTimer() {
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        timerDisplay.textContent = formatTime(elapsed);
+    }
+
+    function stopTimer() {
+        clearInterval(timer);
+        localStorage.removeItem('startTime');
+    }
+
     // Load dashboard saat halaman dimuat
     document.addEventListener('DOMContentLoaded', function() {
         loadDashboard();
         setDefaultDates();
+        // Set dropdown ke periode saat ini
+        document.getElementById('periodSelect').value = currentPeriod;
     });
 
+    // 🎯 Set tanggal default berdasarkan periode
     function setDefaultDates() {
         const endDate = new Date();
         const startDate = new Date();
@@ -110,19 +180,14 @@ include 'includes/header.php';
         document.getElementById('endDate').value = endDate.toISOString().split('T')[0];
     }
 
+    // 🔄 Ganti periode melalui dropdown
     function changePeriod(period) {
         currentPeriod = period;
-
-        // Update button states
-        document.getElementById('weekBtn').className = 'btn btn-secondary';
-        document.getElementById('monthBtn').className = 'btn btn-secondary';
-        document.getElementById('yearBtn').className = 'btn btn-secondary';
-        document.getElementById(period + 'Btn').className = 'btn btn-primary';
-
         setDefaultDates();
         loadDashboard();
     }
 
+    // 📅 Load periode kustom
     function loadCustomPeriod() {
         const startDate = document.getElementById('startDate').value;
         const endDate = document.getElementById('endDate').value;
@@ -140,6 +205,7 @@ include 'includes/header.php';
         loadDashboard(startDate, endDate);
     }
 
+    // 📊 Load data dashboard
     function loadDashboard(startDate = '', endDate = '') {
         showLoading();
 
@@ -171,6 +237,7 @@ include 'includes/header.php';
             });
     }
 
+    // 🖼️ Tampilkan dashboard
     function displayDashboard(data) {
         if (data.overall_stats.total_sessions === 0) {
             showNoData();
@@ -198,12 +265,10 @@ include 'includes/header.php';
         updateTopActivitiesTable(data.activity_stats);
     }
 
+    // 📈 Grafik tren harian
     function createDailyChart(dailyStats) {
         const ctx = document.getElementById('dailyChart').getContext('2d');
-
-        if (charts.daily) {
-            charts.daily.destroy();
-        }
+        if (charts.daily) charts.daily.destroy();
 
         const labels = dailyStats.map(day => formatDate(day.date));
         const data = dailyStats.map(day => day.total_hours);
@@ -243,15 +308,13 @@ include 'includes/header.php';
         });
     }
 
+    // 🍩 Grafik distribusi aktivitas
     function createActivityChart(activityStats) {
         const ctx = document.getElementById('activityChart').getContext('2d');
+        if (charts.activity) charts.activity.destroy();
 
-        if (charts.activity) {
-            charts.activity.destroy();
-        }
-
-        const labels = activityStats.map(activity => activity.activity_name);
-        const data = activityStats.map(activity => activity.total_hours);
+        const labels = activityStats.map(a => a.activity_name);
+        const data = activityStats.map(a => a.total_hours);
         const colors = generateColors(labels.length);
 
         charts.activity = new Chart(ctx, {
@@ -281,15 +344,13 @@ include 'includes/header.php';
         });
     }
 
+    // 📊 Grafik jam produktif
     function createHourlyChart(hourlyStats) {
         const ctx = document.getElementById('hourlyChart').getContext('2d');
+        if (charts.hourly) charts.hourly.destroy();
 
-        if (charts.hourly) {
-            charts.hourly.destroy();
-        }
-
-        const labels = hourlyStats.map(hour => hour.hour_label);
-        const data = hourlyStats.map(hour => hour.total_hours);
+        const labels = hourlyStats.map(h => h.hour_label);
+        const data = hourlyStats.map(h => h.total_hours);
 
         charts.hourly = new Chart(ctx, {
             type: 'bar',
@@ -325,6 +386,7 @@ include 'includes/header.php';
         });
     }
 
+    // 🏆 Tabel aktivitas teratas
     function updateTopActivitiesTable(activityStats) {
         const tableBody = document.getElementById('topActivitiesTable');
         tableBody.innerHTML = '';
@@ -342,19 +404,18 @@ include 'includes/header.php';
         });
     }
 
+    // 🎨 Generate warna grafik
     function generateColors(count) {
         const colors = [
             '#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe',
             '#00f2fe', '#43e97b', '#38f9d7', '#fa709a', '#fee140'
         ];
-
         const result = [];
-        for (let i = 0; i < count; i++) {
-            result.push(colors[i % colors.length]);
-        }
+        for (let i = 0; i < count; i++) result.push(colors[i % colors.length]);
         return result;
     }
 
+    // 📝 Format label periode
     function getPeriodLabel(period) {
         const start = new Date(period.start_date);
         const end = new Date(period.end_date);
@@ -364,14 +425,14 @@ include 'includes/header.php';
         }
 
         const labels = {
-            'week': 'Minggu Ini',
-            'month': 'Bulan Ini',
-            'year': 'Tahun Ini'
+            week: 'Minggu Ini',
+            month: 'Bulan Ini',
+            year: 'Tahun Ini'
         };
-
         return labels[period.period] || 'Periode Kustom';
     }
 
+    // 📅 Format tanggal
     function formatDate(dateString) {
         const date = new Date(dateString);
         return date.toLocaleDateString('id-ID', {
@@ -380,12 +441,14 @@ include 'includes/header.php';
         });
     }
 
+    // 🔒 Escape HTML
     function escapeHtml(text) {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
     }
 
+    // 🔄 Loading states
     function showLoading() {
         document.getElementById('loading').style.display = 'block';
         document.getElementById('error').style.display = 'none';

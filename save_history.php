@@ -13,8 +13,6 @@ try {
     // Validasi input
     $activityName = trim($_POST['activity_name'] ?? '');
     $durationSeconds = intval($_POST['duration_seconds'] ?? 0);
-    $startTime = $_POST['start_time'] ?? '';
-    $endTime = $_POST['end_time'] ?? '';
 
     if (empty($activityName)) {
         throw new Exception('Nama aktivitas tidak boleh kosong');
@@ -24,29 +22,15 @@ try {
         throw new Exception('Durasi harus lebih dari 0 detik');
     }
 
-    if (empty($startTime) || empty($endTime)) {
-        throw new Exception('Waktu mulai dan selesai harus diisi');
-    }
-
-    // Validasi format waktu
-    $startDateTime = new DateTime($startTime);
-    $endDateTime = new DateTime($endTime);
-
-    if ($endDateTime <= $startDateTime) {
-        throw new Exception('Waktu selesai harus setelah waktu mulai');
-    }
-
-    // Simpan ke database
+    // ✅ Simplified insert without start/end times
     $stmt = $pdo->prepare("
-        INSERT INTO focus_history (activity_name, duration_seconds, start_time, end_time) 
-        VALUES (?, ?, ?, ?)
+        INSERT INTO focus_history (activity_name, duration_seconds) 
+        VALUES (?, ?)
     ");
 
     $stmt->execute([
         $activityName,
-        $durationSeconds,
-        $startDateTime->format('Y-m-d H:i:s'),
-        $endDateTime->format('Y-m-d H:i:s')
+        $durationSeconds
     ]);
 
     echo json_encode([

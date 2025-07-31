@@ -12,8 +12,6 @@ include 'includes/header.php';
             <input type="text" id="activityFilter" placeholder="Filter berdasarkan aktivitas..." class="activity-input">
             <input type="date" id="dateFilter" class="activity-input">
             <button class="btn btn-primary" onclick="loadHistory()">🔍 Filter</button>
-        </div>
-        <div class="button-row">
             <button class="btn btn-secondary" onclick="clearFilters()">🔄 Reset</button>
         </div>
     </div>
@@ -29,8 +27,6 @@ include 'includes/header.php';
                     <th>Waktu</th>
                     <th>Aktivitas</th>
                     <th>Durasi</th>
-                    <th>Waktu Mulai</th>
-                    <th>Waktu Selesai</th>
                 </tr>
             </thead>
             <tbody id="historyTableBody">
@@ -125,13 +121,11 @@ include 'includes/header.php';
         history.forEach(record => {
             const row = document.createElement('tr');
             row.innerHTML = `
-            <td>${formatDate(record.date)}</td>
-            <td>${record.time}</td>
-            <td><strong>${escapeHtml(record.activity_name)}</strong></td>
-            <td><span style="font-family: monospace; font-weight: bold;">${record.duration_formatted}</span></td>
-            <td>${formatDateTime(record.start_time)}</td>
-            <td>${formatDateTime(record.end_time)}</td>
-        `;
+                <td>${formatDate(record.date)}</td>
+                <td>${record.time}</td>
+                <td><strong>${escapeHtml(record.activity_name)}</strong></td>
+                <td><span style="font-family: monospace; font-weight: bold;">${record.duration_formatted}</span></td>
+            `;
             tableBody.appendChild(row);
         });
     }
@@ -200,17 +194,6 @@ include 'includes/header.php';
             month: 'long',
             day: 'numeric'
         });
-    }
-
-    function formatDateTime(dateTimeString) {
-        const date = new Date(dateTimeString);
-        const day = date.getDate().toString().padStart(2, '0');
-        const month = (date.getMonth() + 1).toString().padStart(2, '0');
-        const year = date.getFullYear();
-        const hours = date.getHours().toString().padStart(2, '0');
-        const minutes = date.getMinutes().toString().padStart(2, '0');
-
-        return `${day}/${month}/${year}, ${hours}.${minutes}`;
     }
 
     function escapeHtml(text) {

@@ -129,12 +129,10 @@ include 'includes/header.php';
         }, 3000);
     }
 
-    function saveFocusSession(activityName, durationSeconds, startTime, endTime) {
+    function saveFocusSession(activityName, durationSeconds) {
         const formData = new FormData();
         formData.append('activity_name', activityName);
         formData.append('duration_seconds', durationSeconds);
-        formData.append('start_time', startTime.toISOString());
-        formData.append('end_time', endTime.toISOString());
 
         fetch('save_history.php', {
                 method: 'POST',
