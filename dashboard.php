@@ -117,11 +117,32 @@ include 'includes/header.php';
     periodSelect.addEventListener('change', () => {
         const now = new Date();
         const year = now.getFullYear();
+        const month = now.getMonth() + 1; // Bulan saat ini (1-12)
+        const todayStr = now.toISOString().split('T')[0];
 
         if (periodSelect.value === 'year') {
-            startDateEl.value = `${year}-01-01`; // 1 Januari
-            endDateEl.value = `${year}-12-31`; // 31 Desember
-            loadDashboard('year'); // refresh dashboard
+            startDateEl.value = `${year}-01-01`;
+            endDateEl.value = `${year}-12-31`;
+            loadDashboard('year');
+        } else if (periodSelect.value === 'month') {
+            // Awal bulan saat ini
+            const firstDay = `${year}-${month.toString().padStart(2, '0')}-01`;
+            // Akhir bulan saat ini
+            const lastDayDate = new Date(year, month, 0); // 0 = hari terakhir bulan ini
+            const lastDay = `${year}-${month.toString().padStart(2, '0')}-${lastDayDate.getDate().toString().padStart(2, '0')}`;
+            startDateEl.value = firstDay;
+            endDateEl.value = lastDay;
+            loadDashboard('month');
+        } else if (periodSelect.value === 'week') {
+            // Cari hari Senin dan Minggu minggu ini
+            const dayOfWeek = now.getDay(); // 0 = Minggu, 1 = Senin, ..., 6 = Sabtu
+            const monday = new Date(now);
+            monday.setDate(now.getDate() - ((dayOfWeek + 6) % 7));
+            const sunday = new Date(monday);
+            sunday.setDate(monday.getDate() + 6);
+            startDateEl.value = monday.toISOString().split('T')[0];
+            endDateEl.value = sunday.toISOString().split('T')[0];
+            loadDashboard('week');
         }
     });
 
@@ -162,23 +183,34 @@ include 'includes/header.php';
 
     // 🎯 Set tanggal default berdasarkan periode
     function setDefaultDates() {
-        const endDate = new Date();
-        const startDate = new Date();
+        const now = new Date();
+        const todayStr = now.toISOString().split('T')[0];
 
-        switch (currentPeriod) {
-            case 'week':
-                startDate.setDate(endDate.getDate() - 7);
-                break;
-            case 'month':
-                startDate.setDate(endDate.getDate() - 30);
-                break;
-            case 'year':
-                startDate.setDate(endDate.getDate() - 365);
-                break;
+        if (currentPeriod === 'week') {
+            const dayOfWeek = now.getDay();
+            const monday = new Date(now);
+            monday.setDate(now.getDate() - ((dayOfWeek + 6) % 7));
+            const sunday = new Date(monday);
+            sunday.setDate(monday.getDate() + 6);
+            startDateEl.value = monday.toISOString().split('T')[0];
+            endDateEl.value = sunday.toISOString().split('T')[0];
+        } else if (currentPeriod === 'month') {
+            const year = now.getFullYear();
+            const month = now.getMonth() + 1;
+            const firstDay = `${year}-${month.toString().padStart(2, '0')}-01`;
+            const lastDayDate = new Date(year, month, 0);
+            const lastDay = `${year}-${month.toString().padStart(2, '0')}-${lastDayDate.getDate().toString().padStart(2, '0')}`;
+            startDateEl.value = firstDay;
+            endDateEl.value = lastDay;
+        } else if (currentPeriod === 'year') {
+            const year = now.getFullYear();
+            startDateEl.value = `${year}-01-01`;
+            endDateEl.value = `${year}-12-31`;
+        } else {
+            // Default: endDate adalah hari ini
+            startDateEl.value = todayStr;
+            endDateEl.value = todayStr;
         }
-
-        document.getElementById('startDate').value = startDate.toISOString().split('T')[0];
-        document.getElementById('endDate').value = endDate.toISOString().split('T')[0];
     }
 
     // 🔄 Ganti periode melalui dropdown

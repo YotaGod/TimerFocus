@@ -12,6 +12,16 @@
   }
 }
 
+model-viewer {
+  width:180px;
+  height: 140px;
+  margin:20px auto;
+  border-radius:16px;
+  overflow:hidden;
+  background:transparent;
+  display:block"
+}
+
 /* Better touch feedback */
 .btn:active {
   transform: scale(0.95);
@@ -218,4 +228,14 @@
     .date-input {
         font-size: 14px;
     }
+}
+
+model-viewer {
+  width:180px;
+  height: 140px;
+  margin:20px auto;
+  border-radius:16px;
+  overflow:hidden;
+  background:transparent;
+  display:block"
 }

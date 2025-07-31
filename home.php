@@ -3,20 +3,34 @@ require_once 'config/database.php';
 include 'includes/header.php';
 ?>
 
+<style>
+    body, html {
+        overflow: hidden;
+        height: 100%;
+    }
+
+@media (max-width: 768px) {
+    body, html {
+        overflow: auto;
+        height: 100%;
+    }   
+}
+</style>
+
 <div class="card">
     <div class="timer-container">
         <h1>🎯 Focus Timer</h1>
         <p>Kelola waktu fokus Anda untuk produktivitas maksimal</p>
 
         <div class="timer-display" id="timer">00:00:00</div>
-        <div id="tree-3d" style="width:220px;height:5px;margin:20px auto;border-radius:16px;overflow:hidden;background:transparent"></div>
 
         <model-viewer 
-            src="assets/tree.glb" 
-            alt="Tree 3D" 
-            style="width:220px;height:180px;margin:20px auto;border-radius:16px;overflow:hidden;background:transparent;display:block"
-            camera-controls 
-            auto-rotate 
+            id="roverViewer"
+            src="assets/Palta.glb"
+            alt="Rover 3D"
+            camera-controls
+            auto-rotate
+            auto-rotate-speed="2"
             background-color="transparent"
             shadow-intensity="1"
             ar
@@ -40,6 +54,7 @@ include 'includes/header.php';
 </div>
 
 <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+
 <script>
     let timer;
     let isRunning = false;
@@ -222,17 +237,6 @@ include 'includes/header.php';
                 activityInput.disabled = true;
             }
             updateTimer();
-        }
-    });
-</script>
-
-<script>
-    // Pastikan fungsi renderTree3D ada di tree.js
-    window.addEventListener('DOMContentLoaded', function() {
-        if (typeof renderTree3D === 'function') {
-            renderTree3D('tree-3d');
-        } else {
-            console.error('Fungsi renderTree3D tidak ditemukan di assets/tree.js');
         }
     });
 </script>
