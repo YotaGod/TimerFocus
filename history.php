@@ -27,6 +27,7 @@ include 'includes/header.php';
                     <th>Waktu</th>
                     <th>Aktivitas</th>
                     <th>Durasi</th>
+                    <th>Keterangan</th> <!-- Tambahkan kolom ini -->
                 </tr>
             </thead>
             <tbody id="historyTableBody">
@@ -100,34 +101,51 @@ include 'includes/header.php';
     }
 
     function displayHistory(history) {
-        const tableWrapper = document.getElementById('tableWrapper');
-        const table = document.getElementById('historyTable');
         const tableBody = document.getElementById('historyTableBody');
-        const noData = document.getElementById('noData');
-
+        tableBody.innerHTML = '';
         if (history.length === 0) {
-            tableWrapper.style.display = 'none';
+            document.getElementById('tableWrapper').style.display = 'none';
             document.getElementById('pagination').style.display = 'none';
-            noData.style.display = 'block';
+            document.getElementById('noData').style.display = 'block';
             return;
         }
-
-        tableWrapper.style.display = 'block';
+        document.getElementById('tableWrapper').style.display = 'block';
         document.getElementById('pagination').style.display = 'block';
-        noData.style.display = 'none';
+        document.getElementById('noData').style.display = 'none';
 
-        tableBody.innerHTML = '';
+        history.forEach(row => {
+            const tanggal = row.created_at
+            ? new Date(row.created_at).toLocaleDateString('id-ID', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+                })
+            : '-';
+            const waktu = row.created_at ? new Date(row.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-';
+            const aktivitas = row.activity_name || '-';
+            const durasi = row.duration_formatted || '-';
+            const keterangan = row.keterangan || '';
 
-        history.forEach(record => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${formatDate(record.date)}</td>
-                <td>${record.time}</td>
-                <td><strong>${escapeHtml(record.activity_name)}</strong></td>
-                <td><span style="font-family: monospace; font-weight: bold;">${record.duration_formatted}</span></td>
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${tanggal}</td>
+                <td>${waktu}</td>
+                <td>${aktivitas}</td>
+                <td>${durasi}</td>
+                <td>
+                    <button class="btn btn-info btn-sm" onclick="showKeterangan('${keterangan.replace(/'/g,"&#39;").replace(/"/g,"&quot;")}')">
+                        Lihat
+                    </button>
+                </td>
             `;
-            tableBody.appendChild(row);
+            tableBody.appendChild(tr);
         });
+    }
+
+    // Modal untuk keterangan
+    function showKeterangan(keterangan) {
+        alert(keterangan ? keterangan : 'Tidak ada keterangan.');
     }
 
     function updatePagination(pagination) {
@@ -200,6 +218,12 @@ include 'includes/header.php';
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    function formatDuration(seconds) {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return `${m}m ${s}s`;
     }
 
     // Keyboard shortcuts untuk filter

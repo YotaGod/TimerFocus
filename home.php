@@ -62,6 +62,31 @@ include 'includes/header.php';
     </div>
 </div>
 
+<!-- Modal Keterangan -->
+<div id="keteranganModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>✏️ Tambahkan Keterangan</h3>
+      <p class="modal-subtitle">Catat detail aktivitas fokus Anda (opsional)</p>
+    </div>
+    <div class="modal-body">
+      <textarea 
+        id="keteranganInput" 
+        rows="3" 
+        placeholder="Contoh: Membaca buku tentang pengembangan diri bab 3-4..."
+      ></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="cancelKeteranganBtn">Batal</button>
+      <button class="btn btn-primary" id="saveKeteranganBtn">💾 Simpan</button>
+    </div>
+  </div>
+</div>
+<style>
+.modal { position:fixed; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.3); align-items:center; justify-content:center; z-index:9999; }
+.modal-content { background:#fff; padding:24px; border-radius:8px; min-width:300px; max-width:90vw; }
+</style>
+
 <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
 
 <script>
@@ -69,6 +94,7 @@ include 'includes/header.php';
     let isRunning = false;
     let startTime = localStorage.getItem('startTime') ? parseInt(localStorage.getItem('startTime')) : null;
     let pausedTime = localStorage.getItem('pausedTime') ? parseInt(localStorage.getItem('pausedTime')) : null;
+    let pendingSession = null;
 
     const timerDisplay = document.getElementById('timer');
     const startBtn = document.getElementById('startBtn');
@@ -147,13 +173,75 @@ include 'includes/header.php';
             const activityName = activityInput.value.trim();
             const durationSeconds = getElapsedSeconds();
 
-            // Simpan ke database
-            saveFocusSession(activityName, durationSeconds, new Date(startTime), endTime);
-
-            // Reset UI dan localStorage
-            resetTimer();
+            // Simpan data sementara
+            pendingSession = {
+                activityName,
+                durationSeconds,
+                startTimeObj: new Date(startTime),
+                endTimeObj: endTime
+            };
+            
+            // Tampilkan modal
+            showKeteranganModal();
         }
     }
+stopBtn.addEventListener('click', stopTimer);
+    // Tambahkan fungsi baru untuk animasi modal
+function showKeteranganModal() {
+    const modal = document.getElementById('keteranganModal');
+    const textarea = document.getElementById('keteranganInput');
+    
+    console.log('Modal ditampilkan'); // Debugging
+    textarea.value = ''; // Reset textarea
+    modal.style.display = 'flex'; // Tampilkan modal
+    requestAnimationFrame(() => {
+        modal.classList.add('show');
+        textarea.focus();
+    });
+}
+
+function hideKeteranganModal() {
+    const modal = document.getElementById('keteranganModal');
+    modal.classList.remove('show');
+    setTimeout(() => {
+        modal.style.display = 'none';
+    }, 300); // Sesuaikan dengan durasi transisi CSS
+}
+
+// Tambahkan event listener untuk menutup modal saat klik di luar
+document.getElementById('keteranganModal').addEventListener('click', (e) => {
+    if (e.target.id === 'keteranganModal') {
+        hideKeteranganModal();
+        resetTimer();
+    }
+});
+
+// Simpan keterangan dan sesi ke database
+document.getElementById('saveKeteranganBtn').onclick = function() {
+    const keterangan = document.getElementById('keteranganInput').value.trim();
+    if (pendingSession) {
+        saveFocusSession(
+            pendingSession.activityName,
+            pendingSession.durationSeconds,
+            pendingSession.startTimeObj,
+            pendingSession.endTimeObj,
+            keterangan
+        );
+        pendingSession = null;
+        hideKeteranganModal();
+        resetTimer();
+    }
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Hide modal on page load
+  document.getElementById('keteranganModal').style.display = 'none';
+});
+
+document.getElementById('cancelKeteranganBtn').onclick = function() {
+    hideKeteranganModal();
+    resetTimer();
+};
 
     // Simpan input ke localStorage setiap kali berubah
 activityInput.addEventListener('input', function() {
@@ -216,12 +304,14 @@ window.addEventListener('DOMContentLoaded', () => {
         }, 3000);
     }
 
-    function saveFocusSession(activityName, durationSeconds, startTimeObj, endTimeObj) {
+    // Ubah saveFocusSession agar menerima keterangan
+    function saveFocusSession(activityName, durationSeconds, startTimeObj, endTimeObj, keterangan = '') {
         const formData = new FormData();
         formData.append('activity_name', activityName);
         formData.append('duration_seconds', durationSeconds);
         formData.append('start_time', startTimeObj.toISOString());
         formData.append('end_time', endTimeObj.toISOString());
+        formData.append('keterangan', keterangan);
 
         fetch('save_history.php', {
                 method: 'POST',
@@ -248,7 +338,10 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
-        if (e.code === 'Space' && !activityInput.matches(':focus')) {
+        // Cek apakah user sedang fokus di activityInput ATAU keteranganInput
+        if (e.code === 'Space' && 
+            !activityInput.matches(':focus') && 
+            !document.getElementById('keteranganInput').matches(':focus')) {
             e.preventDefault();
             if (isRunning) {
                 pauseTimer();

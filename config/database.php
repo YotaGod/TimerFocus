@@ -1,4 +1,6 @@
 <?php
+date_default_timezone_set('Asia/Jakarta'); // Tambahkan ini di awal file
+
 // Konfigurasi Database
 $host = 'localhost';
 $dbname = 'focus_timer';

@@ -13,6 +13,7 @@ try {
     // Validasi input
     $activityName = trim($_POST['activity_name'] ?? '');
     $durationSeconds = intval($_POST['duration_seconds'] ?? 0);
+    $keterangan = isset($_POST['keterangan']) ? $_POST['keterangan'] : null;
 
     if (empty($activityName)) {
         throw new Exception('Nama aktivitas tidak boleh kosong');
@@ -25,16 +26,22 @@ try {
     // Ambil id berikutnya
     $nextId = getNextId($pdo, 'focus_history', 'id');
 
-    // Insert dengan id manual
+    // Gunakan format datetime yang eksplisit
+    $currentDateTime = new DateTime('now', new DateTimeZone('Asia/Jakarta'));
+    $startTime = $currentDateTime->format('Y-m-d H:i:s');
+
+    // Insert ke focus_history
     $stmt = $pdo->prepare("
-        INSERT INTO focus_history (id, activity_name, duration_seconds) 
-        VALUES (?, ?, ?)
+        INSERT INTO focus_history (id, activity_name, duration_seconds, created_at, keterangan) 
+        VALUES (?, ?, ?, ?, ?)
     ");
 
     $stmt->execute([
         $nextId,
         $activityName,
-        $durationSeconds
+        $durationSeconds,
+        $startTime,
+        $keterangan
     ]);
 
     echo json_encode([

@@ -12,7 +12,8 @@ try {
     $limit = max(1, min(100, $limit));
     $offset = max(0, $offset);
 
-    $sql = "SELECT id, activity_name, duration_seconds, created_at FROM focus_history";
+    // Tambahkan keterangan jika ada di tabel
+    $sql = "SELECT id, activity_name, duration_seconds, created_at, keterangan FROM focus_history";
     $params = [];
     $conditions = [];
 
@@ -44,8 +45,8 @@ try {
             'activity_name' => $record['activity_name'],
             'duration_seconds' => intval($record['duration_seconds']),
             'duration_formatted' => formatDuration($record['duration_seconds']),
-            'date' => date('Y-m-d', strtotime($record['created_at'])),
-            'time' => date('H:i', strtotime($record['created_at']))
+            'created_at' => $record['created_at'],
+            'keterangan' => $record['keterangan'] ?? ''
         ];
     }
 

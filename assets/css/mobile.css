@@ -13,13 +13,14 @@
 }
 
 model-viewer {
-  width:180px;
+  width: 180px;
   height: 140px;
-  margin:20px auto;
-  border-radius:16px;
-  overflow:hidden;
-  background:transparent;
-  display:block"
+  margin: 20px auto;
+  border-radius: 16px;
+  overflow: hidden;
+  background: transparent;
+  display: block
+    "
 }
 
 /* Better touch feedback */
@@ -51,7 +52,8 @@ model-viewer {
   }
 
   .navbar a::before {
-    content: "";
+    content: "
+    ";
     position: absolute;
     top: 0;
     left: -100%;
@@ -204,6 +206,11 @@ model-viewer {
     align-items: stretch;
   }
 
+    /* File mobile.css */
+  .history-table td:nth-child(1) {
+    min-width: 160px;
+  }
+
   .date-group,
   #periodSelect {
     max-width: none;
@@ -237,5 +244,5 @@ model-viewer {
   border-radius:16px;
   overflow:hidden;
   background:transparent;
-  display:block"
+  display:block";
 }
